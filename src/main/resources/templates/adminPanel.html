@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Panel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <h1>Admin Panel</h1>
+    <h2>Yeni Kategori Ekle</h2>
+	<form id="addCategoryForm">
+	    <input type="text" id="newCategoryName" placeholder="Kategori Adı" />
+	    <button type="button" onclick="AddCategory()">Ekle</button>
+	</form>
+    <!--------------->
+    <div>
+        <h3>Yeni Yemek Ekle</h3>
+            <form id="addFoodItemForm" method="post" enctype="multipart/form-data">
+                <input type="text" name="name" placeholder="Food Item Name" required>
+                <input type="text" name="description" placeholder="Description">
+                <input type="number" name="price" placeholder="Price" step="0.1">
+                <select id="foodItemCategory2" name="categoryId" onchange="updateFormAction()">
+                    <option value="">Kategori Seçin</option>
+                    <option th:each="category : ${categories}" 
+                            th:value="${category.id}" 
+                            th:text="${category.name}">
+                    </option>
+                </select>
+                <h4>Resim Ekle/Güncelle</h4>
+                <input type="file" name="imageFile" accept="image/*">
+                <button type="submit">Save Food Item</button>
+            </form>
+    </div>
+    <h2>Kategoriler</h2>
+    <div th:each="category : ${categories}" class="formCategory">
+        <h4 th:text="${category.name}+' - id:' +${category.id}" name="categoryId" th:value="${category.id}" style="display: inline-block; margin-right: 10px;"></h4>
+        <button th:onclick="'DeleteCategory(' + ${category.id} + ')'" style="margin-bottom: 10px; margin-top: 5px; display: inline-block;">Sil</button>
+        <form id="'kategori'+${category.id}">  
+            <input type="text" th:id="'categoryName'+${category.id}" th:value="${category.name}"/>
+            <button type="button" th:onclick="'UpdateCategoryName(' + ${category.id} + ')'" style="margin-bottom: 15px;">Güncelle</button>
+        </form>
+        
+        <div th:each="item : ${category.foodItems}" class="formItem">
+            <form th:action="@{/rest/api/menu/foodItem/update/{id}(id=${item.id})}" th:id="updateFoodForm+${item.id}" th:data-id="${item.id}" enctype="multipart/form-data">
+                <input type="text" th:value="${item.name}" name="name"/>
+                <input type="text" th:value="${item.description}" name="description"/>
+                <input type="number" th:value="${item.price}" name="price"/>
+                <div class="food-image-div">
+                    <img th:if="${item.image != null}"
+                     th:src="@{/foodItem/image/{id}(id=${item.id})}"
+                     alt="Food Item Image" class="food-image"/>
+                </div>
+                <div>
+                    <h4>Resim Ekle/Güncelle</h4>
+                    <input type="file" name="imageFile" accept="image/*" id="food-image-update">
+                </div>
+                
+                <button type="submit" th:data-id="${item.id}">
+                    Güncelle
+                </button>
+                <button type="button" th:onclick="'DeleteFoodItem(' + ${item.id} + ')'" style="margin-bottom: 10px; margin-top: 5px;">Sil</button>
+            </form>
+           
+        </div>
+        <hr style="border: none; border-top: 2px solid gray; margin-top: 5px; margin-bottom: 5px;">
+    </div>
+	
+
+</body>
+<script>
+    const forms = document.querySelectorAll(".formItem form");
+    console.log(forms);
+    forms.forEach(form => {
+        form.onsubmit = function (event) {
+            event.preventDefault(); 
+            console.log("ads");
+            const formData = new FormData(this);
+            const foodId = this.getAttribute("data-id"); 
+            console.log(foodId);
+            console.log(formData.values);
+            fetch(this.action, {
+                method: "PUT",
+                body: formData
+            })
+            .then(response => {
+            if (response.ok) {
+                alert("İçerik başarıyla eklendi!");
+                location.reload(); 
+            } else {
+                alert("İçerik eklenirken bir hata oluştu.");
+            }
+        })
+        .catch(error => {
+            console.error("Hata:", error);
+            alert("Bir hata oluştu.");
+        });
+        };
+    });
+
+
+    document.getElementById("addFoodItemForm").onsubmit = function(event) {
+        event.preventDefault(); 
+        const formData = new FormData(this);
+        console.log(formData.values);
+        fetch(this.action, {
+            method: "POST",
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                alert("İçerik başarıyla eklendi!");
+                location.reload(); 
+            } else {
+                alert("İçerik eklenirken bir hata oluştu.");
+            }
+        })
+        .catch(error => {
+            console.error("Hata:", error);
+            alert("Bir hata oluştu.");
+        });
+    };
+    function updateFormAction() {
+        const form = document.getElementById('addFoodItemForm');
+        const categoryId = document.getElementById('foodItemCategory2').value;
+        form.action = `/rest/api/menu/category/addFoodItem/${categoryId}`;
+        console.log(form.action);
+        console.log(categoryId);
+    }
+    function AddFoodItem(foodName,foodDescription,foodPrice,categoryId,foodImage) {
+        
+        const id = categoryId;
+        const apiUrl = `http://localhost:8080/rest/api/menu/category/addFoodItem/${id}?name=${foodName}&description=${foodDescription}&price=${foodPrice}&imageFile=${foodImage}"`;
+       
+        fetch(apiUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"																																																							
+            },
+        })
+        .then(response => {
+            if (response.ok) {
+                alert("İçerik başarıyla eklendi!");
+                location.reload(); 
+            } else {
+                alert("İçerik eklenirken bir hata oluştu.");
+            }
+        })
+        .catch(error => {
+            console.error("Hata:", error);
+            alert("Bir hata oluştu.");
+        });
+    }
+    function AddCategory() {
+        const categoryName = document.getElementById("newCategoryName").value;
+       
+        const categoryData = {
+            name: categoryName,
+            foodItems: [] 
+        };
+
+    
+        fetch("http://localhost:8080/rest/api/menu/category/save", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"																																																							
+            },
+            body: JSON.stringify(categoryData)
+        })
+        .then(response => {
+            if (response.ok) {
+                alert("Kategori başarıyla eklendi!");
+                location.reload(); 
+            } else {
+                alert("Kategori eklenirken bir hata oluştu.");
+            }
+        })
+        .catch(error => {
+            console.error("Hata:", error);
+            alert("Bir hata oluştu.");
+        });
+    }
+    function UpdateCategoryName(id) {
+
+    console.log(id);
+    const categoryName = document.getElementById("categoryName"+id).value;
+    console.log(categoryName);
+    const categoryId = id;
+
+
+    const apiUrl = `http://localhost:8080/rest/api/menu/category/updateName/${categoryId}?name=${categoryName}`;
+    const requestBody = JSON.stringify(categoryName);
+
+    
+    fetch(apiUrl, {
+        method: 'PUT',
+        headers: {
+        'Content-Type': 'application/json'
+    }
+        
+    })
+    .then(response => {
+        if (response.ok) {
+            alert("Kategori ismi başarıyla güncellendi!");
+            location.reload();
+        } else {
+            alert("Güncelleme başarısız oldu!");
+        }
+    })
+    .catch(error => {
+        console.error("Hata:", error);
+        alert("Bir hata oluştu!");
+    });
+}
+function DeleteCategory(id) {
+    const categoryId = id;
+    const apiUrl = `http://localhost:8080/rest/api/menu/category/delete/${categoryId}`;
+
+    fetch(apiUrl, {
+        method: 'DELETE',
+        headers: {
+        'Content-Type': 'application/json'
+    }
+        
+    })
+    .then(response => {
+        if (response.ok) {
+            alert("Kategori başarıyla silindi!");
+            location.reload();
+        } else {
+            alert("Silme başarısız oldu!");
+        }
+    })
+    .catch(error => {
+        console.error("Hata:", error);
+        alert("Bir hata oluştu!");
+    });
+}
+function DeleteFoodItem(id) {
+    const itemId = id;
+    const apiUrl = `http://localhost:8080/rest/api/menu/foodItem/delete/${itemId}`;
+
+    fetch(apiUrl, {
+        method: 'DELETE',
+        headers: {
+        'Content-Type': 'application/json'
+    }
+        
+    })
+    .then(response => {
+        if (response.ok) {
+            alert("İçerik başarıyla silindi!");
+            location.reload();
+        } else {
+            alert("Silme başarısız oldu!");
+        }
+    })
+    .catch(error => {
+        console.error("Hata:", error);
+        alert("Bir hata oluştu!");
+    });
+}
+</script>
+<style>
+    body {
+    font-family: Arial, sans-serif;
+    background-color: #1a1a1a;
+    color: #f5f5f5;
+    margin: 0;
+    padding: 20px;
+}
+
+/* Başlıklar */
+h1 {
+    color: #ff4c4c;
+    font-size: 2.5em;
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+h2, h3 {
+    color: #ff3333;
+    border-bottom: 2px solid #ff3333;
+    padding-bottom: 5px;
+    margin-top: 30px;
+}
+
+/* Form ve input */
+form {
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: #333;
+    border-radius: 8px;
+}
+
+label {
+    font-weight: bold;
+    margin-bottom: 5px;
+    display: inline-block;
+    color: #ff9999;
+}
+
+input[type="text"], input[type="number"], select {
+    width: 60%;
+    padding: 8px;
+    margin: 5px 0 15px;
+    border: 1px solid #666;
+    border-radius: 4px;
+    background-color: #2a2a2a;
+    color: #f5f5f5;
+}
+
+input::placeholder {
+    color: #888;
+}
+
+input:focus {
+    outline: none;
+    border-color: #ff3333;
+}
+
+/* Buton */
+button {
+    background-color: #ff4c4c;
+    color: #fff;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-weight: bold;
+}
+
+button:hover {
+    background-color: #cc3a3a;
+}
+
+button:active {
+    background-color: #a83232;
+}
+
+.inline {
+    display: inline-block;
+    margin-right: 10px;
+}
+
+hr {
+    border: none;
+    border-top: 2px solid #555;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+div {
+    margin-bottom: 15px;
+}
+
+.formCategory {
+    padding: 10px;
+    background-color: #2a2a2a;
+    margin-bottom: 15px;
+    border-radius: 8px;
+}
+
+.formItem {
+    margin-left: 20px;
+}
+.food-image{
+            width: 10vmin; 
+    		height: 10vmin;
+   			object-fit: cover; 
+    		border-radius: 8px; 
+        }
+
+</style>
+</html>
